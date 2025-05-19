@@ -10,10 +10,9 @@ const {
   ButtonStyle,
   EmbedBuilder,
   Events,
-  StringSelectMenuBuilder
+  StringSelectMenuBuilder,
+  AttachmentBuilder
 } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
 const client = new Client({
@@ -29,17 +28,52 @@ const client = new Client({
 // Configurações fixas
 const STAFF_ROLE_ID = '1369352153612943502';
 const LOG_CHANNEL_ID = '1369350793181925428';
-const TICKET_CATEGORY_ID = '1369350390583263464'; // Coloque a ID da categoria de tickets
+const TICKET_CATEGORY_ID = '1369350390583263464'; // coloque a categoria dos tickets aqui
 
 // Dados do select menu, emojis e labels conforme as imagens
 const ticketOptions = [
-  { label: 'Dúvidas', description: 'Tire suas dúvidas gerais', emoji: '❓', value: 'duvidas' },
-  { label: 'Suporte Técnico', description: 'Problemas técnicos e suporte', emoji: '🛠️', value: 'suporte_tecnico' },
-  { label: 'Financeiro', description: 'Assuntos financeiros e pagamentos', emoji: '💰', value: 'financeiro' },
-  { label: 'Denúncias', description: 'Faça denúncias anonimamente', emoji: '🚨', value: 'denuncias' },
-  { label: 'Reclamações', description: 'Registrar reclamações sobre serviços', emoji: '⚠️', value: 'reclamacoes' },
-  { label: 'Sugestões', description: 'Envie suas sugestões para melhoria', emoji: '💡', value: 'sugestoes' },
-  { label: 'Outros', description: 'Assuntos diversos e outros tickets', emoji: '📋', value: 'outros' },
+  {
+    label: 'Dúvidas',
+    description: 'Tire suas dúvidas gerais',
+    emoji: '❓',
+    value: 'duvidas',
+  },
+  {
+    label: 'Suporte Técnico',
+    description: 'Problemas técnicos e suporte',
+    emoji: '🛠️',
+    value: 'suporte_tecnico',
+  },
+  {
+    label: 'Financeiro',
+    description: 'Assuntos financeiros e pagamentos',
+    emoji: '💰',
+    value: 'financeiro',
+  },
+  {
+    label: 'Denúncias',
+    description: 'Faça denúncias anonimamente',
+    emoji: '🚨',
+    value: 'denuncias',
+  },
+  {
+    label: 'Reclamações',
+    description: 'Registrar reclamações sobre serviços',
+    emoji: '⚠️',
+    value: 'reclamacoes',
+  },
+  {
+    label: 'Sugestões',
+    description: 'Envie suas sugestões para melhoria',
+    emoji: '💡',
+    value: 'sugestoes',
+  },
+  {
+    label: 'Outros',
+    description: 'Assuntos diversos e outros tickets',
+    emoji: '📋',
+    value: 'outros',
+  },
 ];
 
 // Comando /painelticket
@@ -55,7 +89,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         'Nosso objetivo é garantir que você receba o suporte necessário para resolver suas dúvidas, solucionar problemas ou receber orientação especializada.\n\n' +
         'Escolha a opção que corresponda ao seu interesse, e teremos prazer em ajudá-lo da melhor maneira possível.'
       )
-      .setImage('https://storage.prodezconcursos.com.br/images/PMESP---Capa-Loja-02-min-1681328940623.jpg') // Banner da imagem
+      .setImage('https://i.imgur.com/7mURWzG.png') // Banner do painel
       .setFooter({ text: 'Painel de tickets - Selecione uma categoria para abrir um ticket' });
 
     const selectMenu = new StringSelectMenuBuilder()
@@ -77,7 +111,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const selected = interaction.values[0];
     const user = interaction.user;
 
-    // Verifica se já tem ticket aberto
+    // Checar se já tem ticket aberto
     const existingChannel = interaction.guild.channels.cache.find(
       c => c.topic === user.id && c.parentId === TICKET_CATEGORY_ID
     );
@@ -85,7 +119,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.reply({ content: `❌ Você já possui um ticket aberto: ${existingChannel}`, ephemeral: true });
     }
 
-    // Cria canal de ticket
+    // Criar canal de ticket
     const channel = await interaction.guild.channels.create({
       name: `ticket-${user.username.toLowerCase()}`,
       type: ChannelType.GuildText,
@@ -115,7 +149,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
       ],
     });
 
-    // Embed inicial do ticket
     const ticketEmbed = new EmbedBuilder()
       .setColor('#2b2d31')
       .setTitle(`🎫 Ticket aberto - ${selected.charAt(0).toUpperCase() + selected.slice(1).replace('_', ' ')}`)
@@ -133,13 +166,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await channel.send({ content: `<@&${STAFF_ROLE_ID}> | ${user}`, embeds: [ticketEmbed], components: [row] });
     await interaction.reply({ content: `✅ Ticket criado: ${channel}`, ephemeral: true });
 
-    // Log no canal de logs
     const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
     logChannel.send(`📥 ${user.tag} abriu um ticket: ${channel}`);
   }
 });
 
-// Fechar ticket e enviar transcrição por DM
+// Fechar ticket com transcript em arquivo txt
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
 
@@ -148,46 +180,28 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     // Verifica se quem clicou é dono do ticket ou staff
     if (channel.topic !== interaction.user.id && !interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-      return interaction.reply({ content: '❌ Apenas o autor do ticket ou um membro da equipe pode fechar o ticket.', ephemeral: true });
+      return interaction.reply({ content: '❌ Apenas o autor do ticket ou um membro da equipe pode fechar o ticket.', flags: 64 });
     }
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferUpdate(); // tira "bot pensando"
 
-    // Busca as últimas 100 mensagens para montar a transcrição
-    const messages = await channel.messages.fetch({ limit: 100 });
-    const transcript = messages
-      .filter(m => !m.author.bot)
-      .map(m => `[${m.createdAt.toLocaleString()}] ${m.author.tag}: ${m.content}`)
-      .reverse()
-      .join('\n');
+    // Busca até 100 mensagens para transcript
+    let messages = await channel.messages.fetch({ limit: 100 });
+    messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
-    const filePath = path.join(__dirname, `transcript-${channel.id}.txt`);
-    fs.writeFileSync(filePath, transcript);
+    let transcript = `Transcript do ticket: ${channel.name}\n\n`;
+    messages.forEach(msg => {
+      const time = new Date(msg.createdTimestamp).toLocaleString('pt-BR');
+      transcript += `[${time}] ${msg.author.tag}: ${msg.content}\n`;
+    });
 
-    // Enviar transcrição no DM do autor do ticket
-    const user = await interaction.guild.members.fetch(channel.topic).catch(() => null);
-    if (user) {
-      try {
-        await user.send({
-          content: '📄 Aqui está a transcrição do seu ticket:',
-          files: [filePath]
-        });
-      } catch {
-        // Caso não consiga enviar DM
-      }
-    }
+    const buffer = Buffer.from(transcript, 'utf-8');
+    const attachment = new AttachmentBuilder(buffer, { name: `transcript-${channel.name}.txt` });
 
-    // Enviar log no canal de logs
     const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
-    if (logChannel) {
-      logChannel.send(`📤 Ticket fechado: ${channel.name} por ${interaction.user.tag}`);
-    }
+    await logChannel.send({ content: `📤 Ticket fechado: ${channel.name} por ${interaction.user.tag}`, files: [attachment] });
 
-    // Deleta o arquivo temporário e o canal do ticket
-    fs.unlinkSync(filePath);
-    await channel.delete().catch(() => null);
-
-    await interaction.editReply({ content: '✅ Ticket fechado com sucesso e transcrição enviada no DM.' });
+    setTimeout(() => channel.delete().catch(() => null), 5000);
   }
 });
 
