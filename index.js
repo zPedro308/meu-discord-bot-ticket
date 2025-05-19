@@ -1,124 +1,126 @@
-const { Client, GatewayIntentBits, Partials, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionsBitField, StringSelectMenuBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Partials, PermissionsBitField, ChannelType, ButtonBuilder, ButtonStyle, ActionRowBuilder, EmbedBuilder, Events, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const fs = require('fs');
-const config = require('./config.json');
+const path = require('path');
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers, GatewayIntentBits.MessageContent],
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
 
-const TICKET_CATEGORY = config.ticketCategoryId;
-const LOG_CHANNEL_ID = config.logChannelId;
-const STAFF_ROLE_ID = config.staffRoleId;
+const TOKEN = 'SEU_TOKEN_AQUI';
+const TICKET_CHANNEL_ID = '1369350790782652416';
+const LOG_CHANNEL_ID = '1369350793181925428';
+const TICKET_CATEGORY_ID = '1369350390583263464';
+const STAFF_ROLE_ID = '1369352153612943502';
 
 client.once('ready', () => {
-  console.log(`🤖 Bot online como ${client.user.tag}`);
+  console.log(`Bot online: ${client.user.tag}`);
 });
 
-// Enviar mensagem inicial com menu
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  if (interaction.commandName === 'setup') {
-    const embed = new EmbedBuilder()
-      .setTitle("📌 Sistema de Tickets")
-      .setDescription("> Por gentileza, selecione uma das opções abaixo que melhor se adequa às suas necessidades específicas, para que possamos oferecer a assistência adequada e personalizada que você procura...")
-      .setColor('Blue');
+// Envia o painel
+client.on('ready', async () => {
+  const canal = await client.channels.fetch(TICKET_CHANNEL_ID);
+  const embed = new EmbedBuilder()
+    .setColor('#2b2d31')
+    .setTitle('📩 Central de Atendimento')
+    .setDescription('> Por gentileza, selecione uma das opções abaixo que melhor se adequa às suas necessidades específicas, para que possamos oferecer a assistência adequada e personalizada que você procura. Nosso objetivo é garantir que você receba o suporte necessário para resolver suas dúvidas, solucionar problemas ou receber orientação especializada.\n\nEscolha a opção que corresponda ao seu interesse, e teremos prazer em ajudá-lo da melhor maneira possível.')
+    .setImage('https://cdn.discordapp.com/attachments/URL_DA_IMAGEM.png'); // coloque a imagem do seu link aqui
 
-    const menu = new StringSelectMenuBuilder()
-      .setCustomId('menu_ticket')
-      .setPlaceholder('Clique aqui para selecionar a categoria!')
-      .addOptions([
-        { label: 'Dúvidas', value: 'duvidas', emoji: '❓', description: 'Um superior responderá suas dúvidas.' },
-        { label: 'Denúncia', value: 'denuncia', emoji: '🚫', description: 'Denúncias contra membros.' },
-        { label: 'Recrutamento', value: 'recrutamento', emoji: '🔗', description: 'Dúvidas sobre recrutamento.' },
-        { label: 'Revisão de advertência', value: 'advertencia', emoji: '🔍', description: 'Um responsável revisará sua advertência.' },
-        { label: 'Financeiro', value: 'financeiro', emoji: '💰', description: 'Entre em contato com o financeiro!' },
-        { label: 'PAD', value: 'pad', emoji: '🧑‍⚖️', description: 'Solicite sua defesa de processo administrativo.' },
-      ]);
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('ticket_duvida')
+      .setLabel('Dúvidas')
+      .setStyle(ButtonStyle.Primary),
+    new ButtonBuilder()
+      .setCustomId('ticket_suporte')
+      .setLabel('Suporte')
+      .setStyle(ButtonStyle.Secondary)
+  );
 
-    const row = new ActionRowBuilder().addComponents(menu);
-    await interaction.reply({ embeds: [embed], components: [row] });
-  }
+  canal.send({ embeds: [embed], components: [row] });
 });
 
-// Abrir ticket
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isStringSelectMenu()) return;
-  if (interaction.customId === 'menu_ticket') {
-    const category = interaction.values[0];
-    const channelName = `ticket-${interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
-
-    const existing = interaction.guild.channels.cache.find(c => c.name === channelName);
-    if (existing) return interaction.reply({ content: '❌ Você já possui um ticket aberto!', ephemeral: true });
-
-    const channel = await interaction.guild.channels.create({
-      name: channelName,
-      type: ChannelType.GuildText,
-      parent: TICKET_CATEGORY,
-      permissionOverwrites: [
-        { id: interaction.guild.id, deny: [PermissionsBitField.Flags.ViewChannel] },
-        { id: interaction.user.id, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
-        { id: STAFF_ROLE_ID, allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages] },
-      ],
-    });
-
-    const embed = new EmbedBuilder()
-      .setTitle('📩 Ticket Aberto')
-      .setDescription(`Olá ${interaction.user}, você abriu um ticket para **${category}**.\nPor favor, aguarde um responsável responder.`)
-      .setColor('Green');
-
-    const closeBtn = new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId('close_ticket').setLabel('Fechar Ticket').setStyle(ButtonStyle.Danger)
-    );
-
-    await channel.send({ content: `<@${interaction.user.id}> <@&${STAFF_ROLE_ID}>`, embeds: [embed], components: [closeBtn] });
-
-    const logEmbed = new EmbedBuilder()
-      .setTitle('📥 Ticket Aberto')
-      .setDescription(`> Usuário: <@${interaction.user.id}>\n> Categoria: **${category}**\n> Canal: ${channel}`)
-      .setColor('Blue');
-
-    const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-    if (logChannel) logChannel.send({ embeds: [logEmbed] });
-
-    await interaction.reply({ content: `✅ Seu ticket foi criado: ${channel}`, ephemeral: true });
-  }
-});
-
-// Fechar ticket e gerar transcript
-client.on('interactionCreate', async (interaction) => {
+client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isButton()) return;
-  if (interaction.customId === 'close_ticket') {
-    const channel = interaction.channel;
-    const messages = await channel.messages.fetch({ limit: 100 });
-    const transcript = messages.reverse().map(m => `${m.author.tag}: ${m.content}`).join('\n');
 
-    const fileName = `transcript-${channel.name}.txt`;
-    fs.writeFileSync(fileName, transcript);
+  const type = interaction.customId.split('_')[1];
+  const existingChannel = interaction.guild.channels.cache.find(c => c.topic === interaction.user.id);
+  if (existingChannel) return interaction.reply({ content: '❌ Você já possui um ticket aberto.', ephemeral: true });
 
-    const member = channel.members.find(m => !m.user.bot);
-    if (member) {
-      try {
-        await member.send({
-          content: '📝 Aqui está o transcript do seu ticket:',
-          files: [fileName]
-        });
-      } catch (err) {
-        console.error('Erro ao enviar transcript:', err.message);
-      }
-    }
+  const channel = await interaction.guild.channels.create({
+    name: `ticket-${interaction.user.username}`,
+    type: ChannelType.GuildText,
+    parent: TICKET_CATEGORY_ID,
+    topic: interaction.user.id,
+    permissionOverwrites: [
+      {
+        id: interaction.guild.id,
+        deny: [PermissionsBitField.Flags.ViewChannel],
+      },
+      {
+        id: interaction.user.id,
+        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory],
+      },
+      {
+        id: STAFF_ROLE_ID,
+        allow: [PermissionsBitField.Flags.ViewChannel, PermissionsBitField.Flags.SendMessages, PermissionsBitField.Flags.ReadMessageHistory],
+      },
+    ],
+  });
 
-    const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-    if (logChannel) {
-      const logEmbed = new EmbedBuilder()
-        .setTitle('📤 Ticket Fechado')
-        .setDescription(`> Ticket: ${channel.name}\n> Fechado por: <@${interaction.user.id}>`)
-        .setColor('Red');
-      logChannel.send({ embeds: [logEmbed] });
-    }
+  const embed = new EmbedBuilder()
+    .setColor('#2b2d31')
+    .setTitle(`🎫 Ticket criado - ${type.charAt(0).toUpperCase() + type.slice(1)}`)
+    .setDescription(`Olá ${interaction.user}, aguarde um atendente para responder seu ticket.`)
+    .setFooter({ text: 'Use o botão abaixo para fechar o ticket.' });
 
-    await channel.delete().catch(console.error);
-    fs.unlinkSync(fileName);
-  }
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('fechar_ticket')
+      .setLabel('Fechar Ticket')
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  channel.send({ content: `<@&${STAFF_ROLE_ID}> | ${interaction.user}`, embeds: [embed], components: [row] });
+
+  interaction.reply({ content: `✅ Ticket criado: ${channel}`, ephemeral: true });
+
+  const log = await client.channels.fetch(LOG_CHANNEL_ID);
+  log.send(`📥 ${interaction.user} abriu um ticket: ${channel}`);
 });
 
-client.login(config.token);
+// Fecha o ticket e gera transcript
+client.on(Events.InteractionCreate, async (interaction) => {
+  if (!interaction.isButton() || interaction.customId !== 'fechar_ticket') return;
+
+  const channel = interaction.channel;
+  if (channel.topic !== interaction.user.id && !interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+    return interaction.reply({ content: '❌ Apenas o autor do ticket ou um staff pode fechá-lo.', ephemeral: true });
+  }
+
+  const messages = await channel.messages.fetch({ limit: 100 });
+  const transcript = messages
+    .filter(m => !m.author.bot)
+    .map(m => `${m.author.tag}: ${m.content}`)
+    .reverse()
+    .join('\n');
+
+  const filePath = path.join(__dirname, `transcript-${channel.id}.txt`);
+  fs.writeFileSync(filePath, transcript);
+
+  const user = await interaction.guild.members.fetch(channel.topic);
+
+  if (user) {
+    await user.send({
+      content: '📄 Aqui está a transcrição do seu ticket:',
+      files: [filePath]
+    }).catch(() => null);
+  }
+
+  const log = await client.channels.fetch(LOG_CHANNEL_ID);
+  log.send(`📤 Ticket fechado: ${channel.name} por ${interaction.user}`);
+
+  await channel.delete();
+  fs.unlinkSync(filePath);
+});
+
+client.login(TOKEN);
