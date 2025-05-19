@@ -26,10 +26,10 @@ const client = new Client({
 });
 
 // IDs configuráveis por variáveis de ambiente
-const TICKET_CHANNEL_ID = process.env.1369350790782652416;
-const LOG_CHANNEL_ID = process.env.1369350793181925428;
-const TICKET_CATEGORY_ID = process.env.1369350390583263464;
-const STAFF_ROLE_ID = process.env.1369351249022947468;
+const TICKET_CHANNEL_ID = process.env.TICKET_CHANNEL_ID;
+const LOG_CHANNEL_ID = process.env.LOG_CHANNEL_ID;
+const TICKET_CATEGORY_ID = process.env.TICKET_CATEGORY_ID;
+const STAFF_ROLE_ID = process.env.STAFF_ROLE_ID;
 
 client.once('ready', async () => {
   console.log(`Bot online: ${client.user.tag}`);
