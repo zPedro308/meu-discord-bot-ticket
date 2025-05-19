@@ -9,7 +9,3 @@
   "dependencies": {
   "dotenv": "^16.0.0" // ou versão parecida
 }
-{
-"dependencies": {
-  "dotenv": "^16.0.0" // ou versão parecida
-}
