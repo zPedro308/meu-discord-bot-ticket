@@ -7,5 +7,5 @@
     "start": "node index.js"
   },
   "dependencies": {
-  "dotenv": "^16.0.0" // ou versão parecida
+  "dotenv": "^16.0.0" 
 }
