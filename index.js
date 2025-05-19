@@ -177,15 +177,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
   if (interaction.customId === 'fechar_ticket') {
     const channel = interaction.channel;
+    const authorId = channel.topic;
+    const author = await channel.guild.members.fetch(authorId).catch(() => null);
 
     // Verifica se quem clicou é dono do ticket ou staff
-    if (channel.topic !== interaction.user.id && !interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+    if (interaction.user.id !== authorId && !interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
       return interaction.reply({ content: '❌ Apenas o autor do ticket ou um membro da equipe pode fechar o ticket.', flags: 64 });
     }
 
-    await interaction.deferUpdate(); // tira "bot pensando"
+    await interaction.deferUpdate();
 
-    // Busca até 100 mensagens para transcript
+    // Buscar mensagens e gerar transcript
     let messages = await channel.messages.fetch({ limit: 100 });
     messages = messages.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
 
@@ -198,8 +200,23 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const buffer = Buffer.from(transcript, 'utf-8');
     const attachment = new AttachmentBuilder(buffer, { name: `transcript-${channel.name}.txt` });
 
+    // Enviar transcript na DM do autor
+    if (author) {
+      try {
+        await author.send({
+          content: `📄 Aqui está o transcript do seu ticket **${channel.name}**. Obrigado por nos contatar!`,
+          files: [attachment]
+        });
+      } catch (err) {
+        console.error(`❌ Não foi possível enviar a DM para ${author.user.tag}`);
+      }
+    }
+
+    // Enviar log para canal
     const logChannel = await client.channels.fetch(LOG_CHANNEL_ID);
-    await logChannel.send({ content: `📤 Ticket fechado: ${channel.name} por ${interaction.user.tag}`, files: [attachment] });
+    if (logChannel) {
+      logChannel.send(`📤 O ticket ${channel.name} foi fechado por ${interaction.user.tag}`);
+    }
 
     setTimeout(() => channel.delete().catch(() => null), 5000);
   }
