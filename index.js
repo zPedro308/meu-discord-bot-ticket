@@ -41,7 +41,7 @@ client.once('ready', async () => {
     .setColor('#2b2d31')
     .setTitle('📩 Central de Atendimento')
     .setDescription('> Selecione uma das opções abaixo para abrir um ticket personalizado.')
-    .setImage('https://cdn.discordapp.com/attachments/URL_DA_IMAGEM.png'); // troque esse link
+    .setImage('https://pmespconcurso.com.br/wp-content/uploads/2022/06/identidade-1024x369.png'); // troque esse link
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
