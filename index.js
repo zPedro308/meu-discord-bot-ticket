@@ -89,7 +89,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         'Nosso objetivo é garantir que você receba o suporte necessário para resolver suas dúvidas, solucionar problemas ou receber orientação especializada.\n\n' +
         'Escolha a opção que corresponda ao seu interesse, e teremos prazer em ajudá-lo da melhor maneira possível.'
       )
-      .setImage('https://i.imgur.com/7mURWzG.png') // Banner do painel
+      .setImage('https://cdn.awsli.com.br/310x374/1814/1814499/produto/98600760/a2f3a039a4.jpg') // Banner do painel
       .setFooter({ text: 'Painel de tickets - Selecione uma categoria para abrir um ticket' });
 
     const selectMenu = new StringSelectMenuBuilder()
