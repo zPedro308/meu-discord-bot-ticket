@@ -26,9 +26,9 @@ const client = new Client({
 });
 
 // Configurações fixas
-const STAFF_ROLE_ID = '1369352153612943502';
-const LOG_CHANNEL_ID = '1369350793181925428';
-const TICKET_CATEGORY_ID = '1369350390583263464'; // coloque a categoria dos tickets aqui
+const STAFF_ROLE_ID = '1374262779300679812';
+const LOG_CHANNEL_ID = '1374263116099223583';
+const TICKET_CATEGORY_ID = '1378401181961027645'; // coloque a categoria dos tickets aqui
 
 // Dados do select menu, emojis e labels conforme as imagens
 const ticketOptions = [
