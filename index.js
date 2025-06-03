@@ -26,9 +26,9 @@ const client = new Client({
 });
 
 // Configurações fixas
-const STAFF_ROLE_ID = '1374262779300679812';
-const LOG_CHANNEL_ID = '1374263116099223583';
-const TICKET_CATEGORY_ID = '1378401181961027645'; // coloque a categoria dos tickets aqui
+const STAFF_ROLE_ID = '1379499095680483398';
+const LOG_CHANNEL_ID = '1379498880261030032';
+const TICKET_CATEGORY_ID = '1379510451951632525'; // coloque a categoria dos tickets aqui
 
 // Dados do select menu, emojis e labels conforme as imagens
 const ticketOptions = [
@@ -89,7 +89,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         'Nosso objetivo é garantir que você receba o suporte necessário para resolver suas dúvidas, solucionar problemas ou receber orientação especializada.\n\n' +
         'Escolha a opção que corresponda ao seu interesse, e teremos prazer em ajudá-lo da melhor maneira possível.'
       )
-      .setImage('https://cdn.awsli.com.br/310x374/1814/1814499/produto/98600760/a2f3a039a4.jpg') // Banner do painel
+      .setImage('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStZ5hbbLjAUbdYm-VjG4XXnscbtszglmyegg&s') // Banner do painel
       .setFooter({ text: 'Painel de tickets - Selecione uma categoria para abrir um ticket' });
 
     const selectMenu = new StringSelectMenuBuilder()
