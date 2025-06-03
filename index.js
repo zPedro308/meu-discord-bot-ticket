@@ -39,18 +39,6 @@ const ticketOptions = [
     value: 'duvidas',
   },
   {
-    label: 'Suporte Técnico',
-    description: 'Problemas técnicos e suporte',
-    emoji: '🛠️',
-    value: 'suporte_tecnico',
-  },
-  {
-    label: 'Financeiro',
-    description: 'Assuntos financeiros e pagamentos',
-    emoji: '💰',
-    value: 'financeiro',
-  },
-  {
     label: 'Denúncias',
     description: 'Faça denúncias anonimamente',
     emoji: '🚨',
